@@ -1,6 +1,6 @@
 import click
 import uvicorn
-import datetime
+from datetime import datetime
 import joblib
 import pandas as pd
 from rich.console import Console
@@ -20,7 +20,8 @@ console = Console()
 def cli():
     pass
 
-@click.option("-d", "--datapath", help="Path to dataset")
+@cli.command(help="Run a training task on a specified dataset")
+@click.option("-d", "--datapath", help="Path to dataset", default="data/train_n11.csv")
 @click.option("-x", "--text-col", help="Text column", default="DESCRIPTION")
 @click.option("-t", "--title-col", help="Title column", default="TITLE")
 @click.option("-l", "--label-col", help="Label column", default="CATEGORY_ID")
@@ -34,27 +35,30 @@ def train(datapath: str, text_col: str, title_col: str, label_col: str):
         raise ImportError("NLTK not available")
 
     console.log("Reading data...")
-
-    df = pd.read_csv(datapath, nrows=5_000)
+    df = pd.read_csv(datapath, nrows=5_000, sep='|',  encoding='utf-8')
 
     column_trans = ColumnTransformer(
-        [("word_ngram", TfidfVectorizer(strip_accents='unicode', ngram_range=(1, 2), stop_words=stopwords, sublinear_tf=True, smooth_idf=False, tokenizer=make_tokenizer(5)), [text_col, title_col]),
-         ("char_ngram", TfidfVectorizer(strip_accents='unicode', ngram_range=(1, 3), stop_words=stopwords, sublinear_tf=True, smooth_idf=False, analyzer="char"), [text_col, title_col])]
-
+        [
+        ("word_ngram_text", TfidfVectorizer(strip_accents='unicode', ngram_range=(1, 2), stop_words=stopwords, sublinear_tf=True, smooth_idf=False, tokenizer=make_tokenizer(5)), text_col),
+        ("char_ngram_text", TfidfVectorizer(strip_accents='unicode', ngram_range=(1, 3), stop_words=stopwords, sublinear_tf=True, smooth_idf=False, analyzer="char"), text_col),
+        ("word_ngram_title", TfidfVectorizer(strip_accents='unicode', ngram_range=(1, 2), stop_words=stopwords, sublinear_tf=True, smooth_idf=False, tokenizer=make_tokenizer(5)), title_col),
+        ("char_ngram_title", TfidfVectorizer(strip_accents='unicode', ngram_range=(1, 3), stop_words=stopwords, sublinear_tf=True, smooth_idf=False, analyzer="char"), title_col)
+        ],
+        remainder='drop', 
     )
 
     pipe = Pipeline([("column_transformer", column_trans),
                      ("linear_svc", LinearSVC(C=3.995737425961318, intercept_scaling=2.7229092594601005))])
 
     console.log("Fitting pipeline...")
-    pipe.fit(df[[text_col, title_col]], df[label_col])
+    pipe.fit(df[[text_col, title_col]], df[label_col].values)
 
     joblib.dump(pipe, f"n11/models/pipeline_{today}.joblib")
-
     console.log("Pipeline saved!")
 
+
 @cli.command(help="Serve a trained and dumped model")
-@click.option("-m", "--model", help="Name of the model to be served")
+@click.option("-m", "--model", help="Name of the model to be served", default=f"pipeline_{today}")
 @click.option( "-h", "--host", help="Hostname", default="0.0.0.0")
 @click.option("-l","--log-level",
               type=click.Choice(['debug', 'info'], case_sensitive=False), help="Logging Level", default="info")
