@@ -1,3 +1,4 @@
+from click.types import FloatRange
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from rich.console import Console
@@ -5,8 +6,8 @@ from rich.console import Console
 import joblib
 import pandas as pd
 import numpy as np
+import os
 import gc
-from typing import List
 from pydantic import BaseModel
 from pydantic.typing import List, Optional
 
@@ -18,36 +19,43 @@ class N11Info(BaseModel):
     maintainer: str
 
 class PredictionRequest(BaseModel):
-    content: Optional[List[dict]]
-    datapath: Optional[str]
+    content: Optional[List[dict]] 
+    datapath: Optional[str] = None
 
 class PredictionResponse(BaseModel):
-    text: List[str]
-    top5: List[List[str]]
-    top5_probs: List[List[float]]
-
+    titles: List[str]
+    descs: List[str]
+    preds: List[int]
     rc: int
-    messsage: str
+    message: str
+    #top5: List[List[str]]
+    #top5_probs: List[List[float]]
+
+    
 
 
-def make_restful_api(model_name: str):
+def make_restful_api(model_name: str, title_col: str = "TITLE", text_col: str = "DESCRIPTION"):
     app = FastAPI()
 
-    # TODO: Add necessary checks for model and encoder files 
+    try:
+        if os.path.exists(f"n11/models/{model_name}.joblib"):
+            pipe = joblib.load(f"n11/models/{model_name}.joblib") 
+    except:
+        raise FileNotFoundError(f"Model file {model_name} is not found. Please train a model for today.")
 
     @app.get("/", tags=["Landing"], summary="Redirect response")
     async def redirect_docs():
         return RedirectResponse("/docs")
 
-    @app.get("/info", tags=["Information"], summary="HierNN Desription.")
-    async def hiernn_info():
+    @app.get("/info", tags=["Information"], summary="N11 Desription.")
+    async def n11_info():
         return N11Info(
             about="N11 Product Categorization Prediction Service.",
             maintainer="dorukhan.afacan@globalmaksimum.com"
         )
 
     @app.post("/n11/api/predict", tags=["Task"], response_model=PredictionResponse)
-    async def predict(request: PredictionRequest):
+    async def inference(request: PredictionRequest):
         try:
             if request.content is not None:
                 df = pd.DataFrame().from_records(request.content)
@@ -55,19 +63,18 @@ def make_restful_api(model_name: str):
                 df = pd.read_parquet(request.datapath)
 
 
-        # TODO: Inference pipeline
+            preds = list(pipe.predict(df))
+            titles = df[title_col].values.tolist()
+            descriptions = df[text_col].values.tolist()
 
-            return PredictionResponse(text=texts,
-                                      top5=top5,
-                                      top5_probs=top5_probs,
+            return PredictionResponse(titles=titles,
+                                      descs=descriptions,
+                                      preds=preds,
                                       rc=200,
                                       message="Prediction completed")
-
         except Exception as e:
-            return PredictionResponse(text=texts,
-                                      top5=top5,
-                                      top5_probs=top5_probs,
-                                      rc=401,
-                                      message=f"Prediction failed: {e}")
+
+            return PredictionResponse(titles=[], descs=[], preds=[], rc=500, message=f"Inference Error {e}")
+     
 
     return app
