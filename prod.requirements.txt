@@ -1,0 +1,10 @@
+click
+scikit-learn
+numpy
+pandas
+sadedegel
+uvicorn
+pydantic
+fastapi
+rich
+joblib
