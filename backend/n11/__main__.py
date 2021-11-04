@@ -53,12 +53,12 @@ def train(datapath: str, text_col: str, title_col: str, label_col: str):
     console.log("Fitting pipeline...")
     pipe.fit(df[[text_col, title_col]], df[label_col].values)
 
-    joblib.dump(pipe, f"n11/models/pipeline_{today}.joblib")
+    joblib.dump(pipe, f"n11/models/pipeline.joblib")
     console.log("Pipeline saved!")
 
 
 @cli.command(help="Serve a trained and dumped model")
-@click.option("-m", "--model", help="Name of the model to be served", default=f"pipeline_{today}")
+@click.option("-m", "--model", help="Name of the model to be served", default=f"pipeline")
 @click.option( "-h", "--host", help="Hostname", default="0.0.0.0")
 @click.option("-l","--log-level",
               type=click.Choice(['debug', 'info'], case_sensitive=False), help="Logging Level", default="info")
