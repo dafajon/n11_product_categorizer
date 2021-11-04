@@ -1,2 +1,2 @@
-n11/models/*.joblib filter=lfs diff=lfs merge=lfs -text
+backend/n11/models/*.joblib filter=lfs diff=lfs merge=lfs -text
 data/*.csv filter=lfs diff=lfs merge=lfs -text
