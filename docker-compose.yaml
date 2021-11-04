@@ -1,4 +1,4 @@
-version: '3'
+version: '3.3'
 
 services:
   fastapi:
@@ -7,7 +7,10 @@ services:
       - 8000:8000
     networks:
       - deploy_network
+    volumes:
+      - /root/.n11_models:/fastapi/n11/models
     container_name: fastapi
+    
 
   streamlit:
     build: frontend/
