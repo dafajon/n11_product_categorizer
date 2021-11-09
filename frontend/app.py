@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-endpoint = "http://localhost:8000/n11/api/predict"
+endpoint = "http://fastapi:8000/n11/api/predict"
 
 def app():
     st.title("N11 Product Categorization Service")

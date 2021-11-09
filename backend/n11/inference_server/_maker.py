@@ -2,6 +2,7 @@ from click.types import FloatRange
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from rich.console import Console
+import sys
 
 import joblib
 import pandas as pd
@@ -39,9 +40,13 @@ def make_restful_api(model_name: str, title_col: str = "TITLE", text_col: str = 
 
     try:
         if os.path.exists(f"n11/models/{model_name}.joblib"):
-            pipe = joblib.load(f"n11/models/{model_name}.joblib") 
-    except:
-        raise FileNotFoundError(f"Model file {model_name} is not found. Please train a model for today.")
+            console.log(f"Importing pipeline")
+            pipe = joblib.load(f"n11/models/{model_name}.joblib")
+        else:
+            raise ValueError(f"The model file {model_name} does not exist. Please train one today.") 
+    except Exception as e:
+        console.log(f"{e}")
+        sys.exit(1)
 
     @app.get("/", tags=["Landing"], summary="Redirect response")
     async def redirect_docs():
@@ -61,7 +66,6 @@ def make_restful_api(model_name: str, title_col: str = "TITLE", text_col: str = 
                 df = pd.DataFrame().from_records(request.content)
             elif request.datapath is not None:
                 df = pd.read_parquet(request.datapath)
-
 
             preds = list(pipe.predict(df))
             titles = df[title_col].values.tolist()
