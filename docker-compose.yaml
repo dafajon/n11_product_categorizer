@@ -1,0 +1,29 @@
+version: '3.3'
+
+services:
+  fastapi:
+    build: backend/
+    ports: 
+      - 8000:8000
+    networks:
+      - deploy_network
+    volumes:
+      - /root/.n11_data:/fastapi/n11/models
+    container_name: fastapi
+    
+
+  streamlit:
+    build: frontend/
+    depends_on:
+      - fastapi
+    ports: 
+        - 8501:8501
+    networks:
+      - deploy_network
+    volumes:
+      - /root/.n11_data:/streamlit/data
+    container_name: streamlit
+
+networks:
+  deploy_network:
+    driver: bridge

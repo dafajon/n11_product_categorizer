@@ -1,0 +1,6 @@
+streamlit
+requests
+eli5
+bs4
+wordcloud
+joblib

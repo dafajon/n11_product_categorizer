@@ -2,6 +2,7 @@ from click.types import FloatRange
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from rich.console import Console
+import sys
 
 import joblib
 import pandas as pd
@@ -26,12 +27,10 @@ class PredictionResponse(BaseModel):
     titles: List[str]
     descs: List[str]
     preds: List[int]
+    top3: List[List[int]]
+    top3prob: List[List[float]]
     rc: int
-    message: str
-    #top5: List[List[str]]
-    #top5_probs: List[List[float]]
-
-    
+    message: str    
 
 
 def make_restful_api(model_name: str, title_col: str = "TITLE", text_col: str = "DESCRIPTION"):
@@ -39,9 +38,13 @@ def make_restful_api(model_name: str, title_col: str = "TITLE", text_col: str = 
 
     try:
         if os.path.exists(f"n11/models/{model_name}.joblib"):
-            pipe = joblib.load(f"n11/models/{model_name}.joblib") 
-    except:
-        raise FileNotFoundError(f"Model file {model_name} is not found. Please train a model for today.")
+            console.log(f"Importing pipeline")
+            pipe = joblib.load(f"n11/models/{model_name}.joblib")
+        else:
+            raise ValueError(f"The model file {model_name} does not exist. Please train one today.") 
+    except Exception as e:
+        console.log(f"{e}")
+        sys.exit(1)
 
     @app.get("/", tags=["Landing"], summary="Redirect response")
     async def redirect_docs():
@@ -62,19 +65,27 @@ def make_restful_api(model_name: str, title_col: str = "TITLE", text_col: str = 
             elif request.datapath is not None:
                 df = pd.read_parquet(request.datapath)
 
-
             preds = list(pipe.predict(df))
             titles = df[title_col].values.tolist()
             descriptions = df[text_col].values.tolist()
 
+            class_labels = pipe.named_steps['logreg'].classes_
+            prob_preds = pipe.predict_proba(df)
+            top_n_pred = np.argsort(prob_preds, axis=1)[: ,-3:][:, ::-1]
+
+            top3 = [[class_labels[ix] for ix in instance] for instance in top_n_pred]
+            top3prob = [[prob_preds[i, ix] for ix in instance] for i, instance in enumerate(top_n_pred)]
+            
             return PredictionResponse(titles=titles,
                                       descs=descriptions,
                                       preds=preds,
+                                      top3=top3,
+                                      top3prob=top3prob,
                                       rc=200,
                                       message="Prediction completed")
         except Exception as e:
 
-            return PredictionResponse(titles=[], descs=[], preds=[], rc=500, message=f"Inference Error {e}")
+            return PredictionResponse(titles=[], descs=[], preds=[], top3=[], top3prob=[], rc=500, message=f"Inference Error {e}")
      
 
     return app

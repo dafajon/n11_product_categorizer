@@ -7,11 +7,11 @@ from rich.console import Console
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.compose import ColumnTransformer
-from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 
 from .inference_server import make_restful_api
-from .utils import make_tokenizer
+from .utils import make_tokenizer, TextCleaner
 
 today = datetime.today().strftime('%Y-%m-%d')
 console = Console()
@@ -21,7 +21,7 @@ def cli():
     pass
 
 @cli.command(help="Run a training task on a specified dataset")
-@click.option("-d", "--datapath", help="Path to dataset", default="data/train_n11.csv")
+@click.option("-d", "--datapath", help="Path to dataset", default="~/.n11_data/train_n11.csv")
 @click.option("-x", "--text-col", help="Text column", default="DESCRIPTION")
 @click.option("-t", "--title-col", help="Title column", default="TITLE")
 @click.option("-l", "--label-col", help="Label column", default="CATEGORY_ID")
@@ -35,30 +35,24 @@ def train(datapath: str, text_col: str, title_col: str, label_col: str):
         raise ImportError("NLTK not available")
 
     console.log("Reading data...")
-    df = pd.read_csv(datapath, nrows=5_000, sep='|',  encoding='utf-8')
+    df = pd.read_csv(datapath, sep='|',  encoding='utf-8')
 
-    column_trans = ColumnTransformer(
-        [
-        ("word_ngram_text", TfidfVectorizer(strip_accents='unicode', ngram_range=(1, 2), stop_words=stopwords, sublinear_tf=True, smooth_idf=False, tokenizer=make_tokenizer(5)), text_col),
-        ("char_ngram_text", TfidfVectorizer(strip_accents='unicode', ngram_range=(1, 3), stop_words=stopwords, sublinear_tf=True, smooth_idf=False, analyzer="char"), text_col),
-        ("word_ngram_title", TfidfVectorizer(strip_accents='unicode', ngram_range=(1, 2), stop_words=stopwords, sublinear_tf=True, smooth_idf=False, tokenizer=make_tokenizer(5)), title_col),
-        ("char_ngram_title", TfidfVectorizer(strip_accents='unicode', ngram_range=(1, 3), stop_words=stopwords, sublinear_tf=True, smooth_idf=False, analyzer="char"), title_col)
-        ],
-        remainder='drop', 
-    )
-
-    pipe = Pipeline([("column_transformer", column_trans),
-                     ("linear_svc", LinearSVC(C=3.995737425961318, intercept_scaling=2.7229092594601005))])
+    pipe = Pipeline([("text_clean", TextCleaner(to_clean=[title_col, text_col])),
+                     ("text_transform", TfidfVectorizer(strip_accents='unicode', ngram_range=(1, 2), 
+                                                        stop_words=stopwords, sublinear_tf=True, 
+                                                        smooth_idf=False, tokenizer=make_tokenizer(5), 
+                                                        max_df=0.85, min_df=200)),
+                     ('logreg', LogisticRegression(solver='sag',random_state=42, n_jobs=-1))])
 
     console.log("Fitting pipeline...")
     pipe.fit(df[[text_col, title_col]], df[label_col].values)
 
-    joblib.dump(pipe, f"n11/models/pipeline_{today}.joblib")
+    joblib.dump(pipe, f"backend/n11/models/pipeline.joblib")
     console.log("Pipeline saved!")
 
 
 @cli.command(help="Serve a trained and dumped model")
-@click.option("-m", "--model", help="Name of the model to be served", default=f"pipeline_{today}")
+@click.option("-m", "--model", help="Name of the model to be served", default=f"pipeline")
 @click.option( "-h", "--host", help="Hostname", default="0.0.0.0")
 @click.option("-l","--log-level",
               type=click.Choice(['debug', 'info'], case_sensitive=False), help="Logging Level", default="info")
