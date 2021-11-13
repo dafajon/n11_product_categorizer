@@ -27,12 +27,10 @@ class PredictionResponse(BaseModel):
     titles: List[str]
     descs: List[str]
     preds: List[int]
+    top3: List[List[int]]
+    top3prob: List[List[float]]
     rc: int
-    message: str
-    #top5: List[List[str]]
-    #top5_probs: List[List[float]]
-
-    
+    message: str    
 
 
 def make_restful_api(model_name: str, title_col: str = "TITLE", text_col: str = "DESCRIPTION"):
@@ -71,14 +69,23 @@ def make_restful_api(model_name: str, title_col: str = "TITLE", text_col: str = 
             titles = df[title_col].values.tolist()
             descriptions = df[text_col].values.tolist()
 
+            class_labels = pipe.named_steps['logreg'].classes_
+            prob_preds = pipe.predict_proba(df)
+            top_n_pred = np.argsort(prob_preds, axis=1)[: ,-3:][:, ::-1]
+
+            top3 = [[class_labels[ix] for ix in instance] for instance in top_n_pred]
+            top3prob = [[prob_preds[i, ix] for ix in instance] for i, instance in enumerate(top_n_pred)]
+            
             return PredictionResponse(titles=titles,
                                       descs=descriptions,
                                       preds=preds,
+                                      top3=top3,
+                                      top3prob=top3prob,
                                       rc=200,
                                       message="Prediction completed")
         except Exception as e:
 
-            return PredictionResponse(titles=[], descs=[], preds=[], rc=500, message=f"Inference Error {e}")
+            return PredictionResponse(titles=[], descs=[], preds=[], top3=[], top3prob=[], rc=500, message=f"Inference Error {e}")
      
 
     return app
