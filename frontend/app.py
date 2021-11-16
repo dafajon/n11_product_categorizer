@@ -4,7 +4,7 @@ from pages import comp0, comp1, comp3
 
 st.sidebar.title("Provided Services")
 selection = st.sidebar.selectbox("Select one of the services.", 
-["--", "Explarotary Data Analysis",  "Category Suggestions", "Error Analysis"])
+["--", "Explarotary Data Analysis",  "Category Suggestions"])
 
 pages = {"--": comp0,
          "Explarotary Data Analysis": comp1,
