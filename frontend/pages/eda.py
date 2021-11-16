@@ -11,7 +11,6 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_selection import chi2
 from sklearn.metrics import classification_report
 
-from streamlit_utils import TextCleaner
 
 @st.cache
 def data():
@@ -19,14 +18,6 @@ def data():
     data = data[~data.CATEGORY_ID.isna()]
     data.CATEGORY_ID = data.CATEGORY_ID.astype(int)
     return data, data['CATEGORY_ID'].value_counts()
-
-@st.cache
-def clean_text(text_to_clean):
-    _ctdf = pd.DataFrame(data=[(f'{text_to_clean}')], columns=['text'])
-    tc = TextCleaner(['text'])
-    ct = tc.transform(_ctdf)
-    return ct
-
 
 def app():
     st.title("Exploratory Data Analysis on the Training Data")

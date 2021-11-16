@@ -7,8 +7,6 @@ services:
       - 8000:8000
     networks:
       - deploy_network
-    volumes:
-      - /root/.n11_data:/fastapi/n11/models
     container_name: fastapi
     
 
@@ -20,8 +18,6 @@ services:
         - 8501:8501
     networks:
       - deploy_network
-    volumes:
-      - /root/.n11_data:/streamlit/data
     container_name: streamlit
 
 networks:
