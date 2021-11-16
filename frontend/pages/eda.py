@@ -11,7 +11,6 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_selection import chi2
 from sklearn.metrics import classification_report
 
-
 @st.cache
 def data():
     data = pd.read_csv('data/train_n11.csv')
