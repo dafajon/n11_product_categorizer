@@ -12,7 +12,6 @@ def app():
 
     st.subheader("- Exploratory Data Analysis on input training data. 🧐 ")
     st.subheader("- Product category suggestion over user free-text input. 🧩")
-    st.subheader("- Error analysis on a labeled test dataset. 🎯")
 
 if __name__ == "__main__":
     app()
