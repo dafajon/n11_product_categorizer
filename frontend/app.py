@@ -8,9 +8,7 @@ selection = st.sidebar.selectbox("Select one of the services.",
 
 pages = {"--": comp0,
          "Explarotary Data Analysis": comp1,
-         #"Train New Model": comp2,
-         "Category Suggestions": comp3,
-         "Error Analysis": comp4}
+         "Category Suggestions": comp3}
 
 
 pages.get(selection, lambda: None)()
