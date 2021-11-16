@@ -1,5 +1,5 @@
 import streamlit as st
-from pages import comp0, comp1, comp2, comp3, comp4
+from pages import comp0, comp1, comp3
 
 
 st.sidebar.title("Provided Services")
