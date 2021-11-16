@@ -15,7 +15,7 @@ from streamlit_utils import TextCleaner
 
 @st.cache
 def data():
-    data = pd.read_csv('data/train_n11.csv', sep='|')
+    data = pd.read_csv('data/train_n11.csv')
     data = data[~data.CATEGORY_ID.isna()]
     data.CATEGORY_ID = data.CATEGORY_ID.astype(int)
     return data, data['CATEGORY_ID'].value_counts()
