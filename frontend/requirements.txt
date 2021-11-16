@@ -4,3 +4,4 @@ eli5
 bs4
 wordcloud
 joblib
+seaborn
