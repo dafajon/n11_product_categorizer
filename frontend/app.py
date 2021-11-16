@@ -1,16 +1,14 @@
 import streamlit as st
-from pages import comp0, comp1, comp2, comp3, comp4
+from pages import comp0, comp1, comp3
 
 
 st.sidebar.title("Provided Services")
 selection = st.sidebar.selectbox("Select one of the services.", 
-["--", "Explarotary Data Analysis",  "Category Suggestions", "Error Analysis"])
+["--", "Explarotary Data Analysis",  "Category Suggestions"])
 
 pages = {"--": comp0,
          "Explarotary Data Analysis": comp1,
-         #"Train New Model": comp2,
-         "Category Suggestions": comp3,
-         "Error Analysis": comp4}
+         "Category Suggestions": comp3}
 
 
 pages.get(selection, lambda: None)()
